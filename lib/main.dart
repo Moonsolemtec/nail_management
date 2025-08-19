@@ -27,6 +27,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Nail Management',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

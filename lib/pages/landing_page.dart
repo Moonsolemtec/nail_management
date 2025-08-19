@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nail_management/pages/service_page.dart';
+import 'package:nail_management/pages/settings_page.dart';
+import 'package:nail_management/theme/app_theme.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class LandingPage extends StatefulWidget {
@@ -14,13 +17,33 @@ class _LandingPageState extends State<LandingPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
 
-  final List<Map<String, String>> professionals = [
+  final List<Map<String, String>> _professionals = const [
     {"name": "Paola", "image": "./images/sem_imagem.jpg"},
     {"name": "Heloísa", "image": "./images/sem_imagem.jpg"},
   ];
 
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      const ServicePage(),
+      CalendarPage(
+        focusedDay: _focusedDay,
+        selectedDay: _selectedDay,
+        professionals: _professionals,
+        onDaySelected: (selected, focused) {
+          setState(() {
+            _selectedDay = selected;
+            _focusedDay = focused;
+          });
+        },
+      ),
+      const SettingsPage(),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Nail Management"),
@@ -32,105 +55,151 @@ class _LandingPageState extends State<LandingPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          SizedBox(
-            height: 110,
-            child: Center(
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: professionals.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 8),
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            backgroundImage: NetworkImage(
-                              professionals[index]["image"]!,
-                            ),
-                            radius: 25,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            professionals[index]["name"]!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: TableCalendar(
-                focusedDay: _focusedDay,
-                firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _selectedDay = selectedDay;
-                    _focusedDay = focusedDay;
-                  });
-                },
-                calendarStyle: CalendarStyle(
-                  selectedDecoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    shape: BoxShape.circle,
-                  ),
-                  todayDecoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(context).primaryColor,
-                      width: 2,
-                    ),
-                    color: Colors.transparent,
-                    shape: BoxShape.circle,
-                  ),
-                  todayTextStyle: TextStyle(
-                    color: Theme.of(context).textTheme.bodyLarge!.color,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                headerStyle: const HeaderStyle(
-                  formatButtonVisible: false,
-                  titleCentered: true,
-                ),
-              ),
-            ),
-          ),
-        ],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() => _selectedIndex = index);
-        },
+        onTap: _onItemTapped,
+        selectedItemColor: AppTheme.primary,
+        unselectedItemColor: AppTheme.deselected,
+        iconSize: 30,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: ""),
         ],
+      ),
+    );
+  }
+}
+
+class CalendarPage extends StatelessWidget {
+  final DateTime focusedDay;
+  final DateTime? selectedDay;
+  final List<Map<String, String>> professionals;
+  final void Function(DateTime selectedDay, DateTime focusedDay) onDaySelected;
+
+  const CalendarPage({
+    super.key,
+    required this.focusedDay,
+    required this.selectedDay,
+    required this.professionals,
+    required this.onDaySelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Center(
+                child: ProfessionalsList(professionals: professionals),
+              ),
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TableCalendar(
+              focusedDay: focusedDay,
+              firstDay: DateTime.utc(2020, 1, 1),
+              lastDay: DateTime.utc(2030, 12, 31),
+              selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+              onDaySelected: onDaySelected,
+              calendarStyle: _calendarStyle(context),
+              headerStyle: const HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  CalendarStyle _calendarStyle(BuildContext context) => CalendarStyle(
+        selectedDecoration: BoxDecoration(
+          color: AppTheme.primary,
+          shape: BoxShape.circle,
+        ),
+        todayDecoration: BoxDecoration(
+          border: Border.all(
+            color: AppTheme.primary,
+            width: 2,
+          ),
+          color: Colors.transparent,
+          shape: BoxShape.circle,
+        ),
+        todayTextStyle: TextStyle(
+          color: Theme.of(context).textTheme.bodyLarge!.color,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+}
+
+class ProfessionalsList extends StatelessWidget {
+  final List<Map<String, String>> professionals;
+
+  const ProfessionalsList({super.key, required this.professionals});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 120,
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: professionals
+              .map((professional) => ProfessionalCard(
+                    name: professional["name"]!,
+                    imagePath: professional["image"]!,
+                  ))
+              .toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class ProfessionalCard extends StatelessWidget {
+  final String name;
+  final String imagePath;
+
+  const ProfessionalCard({super.key, required this.name, required this.imagePath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 8),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 2,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(backgroundImage: NetworkImage(imagePath), radius: 25),
+            const SizedBox(height: 6),
+            Text(
+              name,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
