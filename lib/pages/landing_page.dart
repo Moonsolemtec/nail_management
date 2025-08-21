@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nail_management/pages/event_page.dart';
 import 'package:nail_management/pages/service_page.dart';
 import 'package:nail_management/pages/settings_page.dart';
 import 'package:nail_management/theme/app_theme.dart';
@@ -39,6 +40,16 @@ class _LandingPageState extends State<LandingPage> {
             _selectedDay = selected;
             _focusedDay = focused;
           });
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (context) {
+            return EventPage(selectedDate: selected);
+          },
+        );
         },
       ),
       const SettingsPage(),

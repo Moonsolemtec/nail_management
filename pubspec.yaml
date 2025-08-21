@@ -10,6 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
   table_calendar: ^3.2.0
+  intl: ^0.20.2
+  firebase_core: ^4.0.0
+  cloud_firestore: ^6.0.0
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,14 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
 project(nail_management LANGUAGES CXX)
+# Ignorar warnings LNK4099 sobre PDBs ausentes do Firebase
+if(MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /ignore:4099")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD")
+endif()
+
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "145943091404",
+    "project_id": "nail-management-5c918",
+    "storage_bucket": "nail-management-5c918.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:145943091404:android:30309ff9fe87c85ecd4a69",
+        "android_client_info": {
+          "package_name": "com.example.nail_management"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmDyvxNRR6JD7F7Q7lFcLpSBiHVyChYq4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
