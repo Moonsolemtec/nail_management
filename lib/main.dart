@@ -1,16 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
-import 'pages/landing_page.dart';
+import 'pages/loading_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await initializeDateFormatting('pt_BR', null);
 
@@ -43,7 +41,7 @@ class _MyAppState extends State<MyApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
-      home: LandingPage(onToggleTheme: _toggleTheme),
+      home: LoadingPage(),
     );
   }
 }
