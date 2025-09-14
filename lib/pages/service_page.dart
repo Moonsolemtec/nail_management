@@ -12,7 +12,6 @@ class ServicePage extends StatefulWidget {
 class _ServicePageState extends State<ServicePage> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // ---------- CRUD SERVIÇOS ----------
   Future<void> _addOrEditService({DocumentSnapshot? service}) async {
     final formKey = GlobalKey<FormState>();
     String? name = service?["name"];
@@ -20,7 +19,6 @@ class _ServicePageState extends State<ServicePage> {
     String? duration = service?["duration"].toString();
     String? selectedAgent = service?["agentId"];
 
-    // pegar agentes
     final agentsSnapshot = await _db.collection("agents").get();
     final agents = agentsSnapshot.docs;
 
@@ -57,7 +55,7 @@ class _ServicePageState extends State<ServicePage> {
                     onSaved: (v) => duration = v,
                   ),
                   DropdownButtonFormField<String>(
-                    value: selectedAgent,
+                    value: agents.any((a) => a.id == selectedAgent) ? selectedAgent : null,
                     decoration: const InputDecoration(labelText: "Agente"),
                     items: agents
                         .map((a) => DropdownMenuItem(
@@ -100,7 +98,6 @@ class _ServicePageState extends State<ServicePage> {
     );
   }
 
-  // ---------- CRUD AGENTES ----------
   Future<void> _addOrEditAgent({DocumentSnapshot? agent}) async {
     final formKey = GlobalKey<FormState>();
     String? name = agent?["name"];
@@ -172,12 +169,10 @@ class _ServicePageState extends State<ServicePage> {
     );
   }
 
-  // ---------- DELETE ----------
   Future<void> _deleteItem(String collection, String id) async {
     await _db.collection(collection).doc(id).delete();
   }
 
-  // ---------- LISTAS ----------
   void _showListDialog(String title, String collection, VoidCallback onAdd, Function(DocumentSnapshot) onEdit) {
     showDialog(
       context: context,
@@ -206,7 +201,12 @@ class _ServicePageState extends State<ServicePage> {
                           final item = docs[i];
                           return ListTile(
                             title: Text(item["name"] ?? ""),
-                            subtitle: Text(item.data().toString()),
+                            subtitle: collection == "services"
+                                ? Text(
+                                    "Preço: R\$ ${item["price"] != null ? (item["price"] as num).toStringAsFixed(2) : "--"}\n"
+                                    "Duração: ${item["duration"]?.toString() ?? "--"} min",
+                                  )
+                                : Text("Turnos: ${(item["shifts"] as List?)?.join(", ") ?? "--"}"),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -245,9 +245,12 @@ class _ServicePageState extends State<ServicePage> {
     );
   }
 
-  // ---------- HORÁRIOS ----------
   Future<void> _setInterval() async {
-    int? minutes;
+    final doc = await _db.collection("settings").doc("schedule").get();
+    int? minutes = doc.exists ? doc["interval"] : null;
+    final controller = TextEditingController(
+      text: minutes?.toString() ?? "",
+    );
 
     showDialog(
       context: context,
@@ -255,12 +258,16 @@ class _ServicePageState extends State<ServicePage> {
         return AlertDialog(
           title: const Text("Definir intervalo entre agendamentos"),
           content: TextFormField(
+            controller: controller,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(labelText: "Minutos"),
             onChanged: (v) => minutes = int.tryParse(v),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar"),
+            ),
             ElevatedButton(
               onPressed: () async {
                 if (minutes != null && minutes! > 0) {
@@ -278,7 +285,6 @@ class _ServicePageState extends State<ServicePage> {
     );
   }
 
-  // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
