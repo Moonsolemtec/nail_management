@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nail_management/theme/app_theme.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ServicePage extends StatefulWidget {
   const ServicePage({super.key});
@@ -374,9 +378,9 @@ class _ServicePageState extends State<ServicePage> {
       builder: (_) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.5,
-          minChildSize: 0.3,
-          maxChildSize: 0.8,
+          initialChildSize: 0.8,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
           builder: (_, scrollController) {
             return SingleChildScrollView(
               controller: scrollController,
@@ -487,6 +491,12 @@ class _ServicePageState extends State<ServicePage> {
                   text: "Horários",
                   onTap: _setInterval,
                 ),
+                const Divider(height: 5),
+                _buildMenuItem(
+                    icon: Icons.home_work,
+                  text: "Salão",
+                  onTap: () => _registerSalon(context),
+                ),
               ],
             ),
           ),
@@ -494,6 +504,160 @@ class _ServicePageState extends State<ServicePage> {
       ),
     );
   }
+  
+  // ------------------------------
+  // Salon Registration
+  // ------------------------------
+  Future<void> _registerSalon(BuildContext context) async {
+    final doc = await _db.collection("salons").doc("my_salon").get();
+    String? address = doc.exists ? doc["address"] : null;
+    String? cnpj = doc.exists ? doc["cnpj"] : null;
+    String? hours = doc.exists ? doc["hours"] : null;
+    String? name = doc.exists ? doc["name"] : null;
+    String? phone = doc.exists ? doc["phone"] : null;
+    final TextEditingController nameController = TextEditingController(text: name ?? "");
+    final TextEditingController cnpjController = TextEditingController(text: cnpj ?? "");
+    final TextEditingController addressController = TextEditingController(text: address ?? "");
+    final TextEditingController phoneController = TextEditingController(text: phone ?? "");
+    final TextEditingController hoursController = TextEditingController(text: hours ?? "");
+
+    File? salonImage;
+
+    Future<void> _pickImage() async {
+      final picker = ImagePicker();
+      final pickedImage = await picker.pickImage(source: ImageSource.gallery);
+
+      if (pickedImage != null) {
+        final File imageFile = File(pickedImage.path);
+        final directory = await getApplicationDocumentsDirectory();
+        final String path =
+            '${directory.path}/${DateTime.now().millisecondsSinceEpoch}.png';
+        final File localImage = await imageFile.copy(path);
+
+        setState(() {
+          salonImage = localImage;
+        });
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.85,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          builder: (_, scrollController) {
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                return SingleChildScrollView(
+                  controller: scrollController,
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                    left: 20,
+                    right: 20,
+                    top: 20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text("Cadastro de Salão",
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: nameController,
+                        decoration:
+                            const InputDecoration(labelText: "Nome do salão"),
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: cnpjController,
+                        decoration: const InputDecoration(labelText: "CNPJ"),
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: addressController,
+                        decoration: const InputDecoration(labelText: "Endereço"),
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: phoneController,
+                        decoration: const InputDecoration(labelText: "Telefone"),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: hoursController,
+                        decoration: const InputDecoration(
+                            labelText: "Horário de funcionamento"),
+                      ),
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: () async {
+                          await _pickImage();
+                          setModalState(() {}); // Atualiza a imagem no modal
+                        },
+                        child: Container(
+                          height: 200,
+                          width: double.infinity,
+                          color: Colors.grey[300],
+                          child: salonImage != null
+                              ? Image.file(salonImage!, fit: BoxFit.cover)
+                              : const Center(
+                                  child: Text("Clique para adicionar uma imagem")),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancelar")),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () async {
+                              // Salva os dados no Firebase (exceto a imagem)
+                              final salonData = {
+                                "name": nameController.text,
+                                "cnpj": cnpjController.text,
+                                "address": addressController.text,
+                                "phone": phoneController.text,
+                                "hours": hoursController.text,
+                                "updatedAt": FieldValue.serverTimestamp(),
+                              };
+
+                              // Você pode usar um doc fixo ou gerar aleatório
+                              await _db.collection("salons").doc("my_salon").set(salonData);
+
+                              // Opcional: print no console
+                              print("Salão salvo no Firebase!");
+                              print("Imagem local: ${salonImage?.path}");
+
+                              Navigator.pop(context);
+                            },
+                            child: const Text("Salvar"),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
 
   Widget _buildMenuItem(
       {required IconData icon,
