@@ -38,7 +38,7 @@ class _ServicePageState extends State<ServicePage> {
       builder: (_) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.7,
+          initialChildSize: 0.8,
           minChildSize: 0.4,
           maxChildSize: 0.95,
           builder: (_, scrollController) {
@@ -55,38 +55,78 @@ class _ServicePageState extends State<ServicePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(service == null ? "Novo Serviço" : "Editar Serviço",
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(
+                      service == null ? "Novo Serviço" : "Editar Serviço",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 20),
                     TextFormField(
-                      initialValue: name,
-                      decoration: const InputDecoration(labelText: "Nome"),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? "Informe o nome" : null,
+                      controller: TextEditingController(text: name),
+                      decoration: InputDecoration(
+                        labelText: "Nome",
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        prefixIcon: const Icon(Icons.content_cut),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      validator: (v) => v == null || v.isEmpty ? "Informe o nome" : null,
                       onSaved: (v) => name = v,
                     ),
+                    const SizedBox(height: 10),
                     TextFormField(
-                      initialValue: price,
-                      decoration: const InputDecoration(labelText: "Preço (R\$)"),
+                      controller: TextEditingController(text: price),
+                      decoration: InputDecoration(
+                        labelText: "Preço (R\$)",
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        prefixIcon: const Icon(Icons.attach_money),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
                       keyboardType: TextInputType.number,
-                      validator: (v) =>
-                          v == null || v.isEmpty ? "Informe o preço" : null,
+                      validator: (v) => v == null || v.isEmpty ? "Informe o preço" : null,
                       onSaved: (v) => price = v,
                     ),
+                    const SizedBox(height: 10),
                     TextFormField(
-                      initialValue: duration,
-                      decoration: const InputDecoration(labelText: "Tempo (min)"),
+                      controller: TextEditingController(text: duration),
+                      decoration: InputDecoration(
+                        labelText: "Tempo (min)",
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        prefixIcon: const Icon(Icons.timer),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
                       keyboardType: TextInputType.number,
-                      validator: (v) =>
-                          v == null || v.isEmpty ? "Informe o tempo" : null,
+                      validator: (v) => v == null || v.isEmpty ? "Informe o tempo" : null,
                       onSaved: (v) => duration = v,
                     ),
+                    const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      value: agents.any((a) => a.id == selectedAgent)
-                          ? selectedAgent
-                          : null,
-                      decoration: const InputDecoration(labelText: "Agente"),
+                      value: agents.any((a) => a.id == selectedAgent) ? selectedAgent : null,
+                      decoration: InputDecoration(
+                        labelText: ("Agente"), 
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        prefixIcon: const Icon(Icons.person),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
                       items: agents
                           .map((a) => DropdownMenuItem(
                                 value: a.id,
@@ -94,16 +134,20 @@ class _ServicePageState extends State<ServicePage> {
                               ))
                           .toList(),
                       onChanged: (v) => selectedAgent = v,
-                      validator: (v) =>
-                          v == null ? "Selecione um agente" : null,
+                      validator: (v) => v == null ? "Selecione um agente" : null,
                     ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        TextButton(
+                        OutlinedButton.icon(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text("Cancelar"),
+                          icon: const Icon(Icons.close),
+                          label: const Text("Cancelar"),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: BorderSide(color: Colors.transparent),
+                          ),
                         ),
                         const SizedBox(width: 10),
                         ElevatedButton(
@@ -119,10 +163,7 @@ class _ServicePageState extends State<ServicePage> {
                               if (service == null) {
                                 await _db.collection("services").add(data);
                               } else {
-                                await _db
-                                    .collection("services")
-                                    .doc(service.id)
-                                    .update(data);
+                                await _db.collection("services").doc(service.id).update(data);
                               }
                               Navigator.pop(context);
                               _showListDialog("Serviços", "services",
@@ -138,7 +179,7 @@ class _ServicePageState extends State<ServicePage> {
                   ],
                 ),
               ),
-            );
+            );          
           },
         );
       },
@@ -162,7 +203,7 @@ class _ServicePageState extends State<ServicePage> {
       builder: (_) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.7,
+          initialChildSize: 0.8,
           minChildSize: 0.4,
           maxChildSize: 0.95,
           builder: (_, scrollController) {
@@ -179,24 +220,37 @@ class _ServicePageState extends State<ServicePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(agent == null ? "Novo Agente" : "Editar Agente",
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(
+                      agent == null ? "Novo Agente" : "Editar Agente",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 20),
                     TextFormField(
-                      initialValue: name,
-                      decoration: const InputDecoration(labelText: "Nome"),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? "Informe o nome" : null,
+                      controller: TextEditingController(text: name),
+                      decoration: InputDecoration(
+                        labelText: "Nome",
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        prefixIcon: const Icon(Icons.person),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      validator: (v) => v == null || v.isEmpty ? "Informe o nome" : null,
                       onSaved: (v) => name = v,
                     ),
+                    const SizedBox(height: 10),
                     CheckboxListTile(
                       title: const Text("Matutino"),
                       value: shifts.contains("Matutino"),
                       onChanged: (v) {
-                        v == true
-                            ? shifts.add("Matutino")
-                            : shifts.remove("Matutino");
+                        v == true ? shifts.add("Matutino") : shifts.remove("Matutino");
                         setState(() {});
                       },
                     ),
@@ -204,9 +258,7 @@ class _ServicePageState extends State<ServicePage> {
                       title: const Text("Noturno"),
                       value: shifts.contains("Noturno"),
                       onChanged: (v) {
-                        v == true
-                            ? shifts.add("Noturno")
-                            : shifts.remove("Noturno");
+                        v == true ? shifts.add("Noturno") : shifts.remove("Noturno");
                         setState(() {});
                       },
                     ),
@@ -214,9 +266,14 @@ class _ServicePageState extends State<ServicePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        TextButton(
+                        OutlinedButton.icon(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text("Cancelar"),
+                          icon: const Icon(Icons.close),
+                          label: const Text("Cancelar"),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: BorderSide(color: Colors.transparent),
+                          ),
                         ),
                         const SizedBox(width: 10),
                         ElevatedButton(
@@ -227,15 +284,15 @@ class _ServicePageState extends State<ServicePage> {
                               if (agent == null) {
                                 await _db.collection("agents").add(data);
                               } else {
-                                await _db
-                                    .collection("agents")
-                                    .doc(agent.id)
-                                    .update(data);
+                                await _db.collection("agents").doc(agent.id).update(data);
                               }
                               Navigator.pop(context);
-                              _showListDialog("Agentes", "agents",
-                                  () => _addOrEditAgent(),
-                                  (doc) => _addOrEditAgent(agent: doc));
+                              _showListDialog(
+                                "Agentes",
+                                "agents",
+                                () => _addOrEditAgent(),
+                                (doc) => _addOrEditAgent(agent: doc),
+                              );
                             }
                           },
                           child: const Text("Salvar"),
@@ -287,9 +344,16 @@ class _ServicePageState extends State<ServicePage> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      Text(title,
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
                       const SizedBox(height: 20),
                       Expanded(
                         child: docs.isEmpty
@@ -336,9 +400,15 @@ class _ServicePageState extends State<ServicePage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("Fechar")),
+                          OutlinedButton.icon(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close),
+                            label: const Text("Fechar"),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: BorderSide(color: Colors.transparent),
+                            ),
+                          ),
                           const SizedBox(width: 10),
                           ElevatedButton.icon(
                             onPressed: () {
@@ -392,26 +462,51 @@ class _ServicePageState extends State<ServicePage> {
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text("Definir intervalo entre agendamentos",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    "Intervalo Entre Agendamentos",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 20),
+
                   TextFormField(
                     controller: controller,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: "Minutos"),
+                    decoration: InputDecoration(
+                      labelText: "Minutos",
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      prefixIcon: const Icon(Icons.timer),
+                    ),
                     onChanged: (v) => minutes = int.tryParse(v),
                   ),
-                  const SizedBox(height: 20),
+
+                  const SizedBox(height: 30),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("Cancelar")),
+                      OutlinedButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                        label: const Text("Cancelar"),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: BorderSide(color: Colors.transparent),
+                        ),
+                      ),
                       const SizedBox(width: 10),
-                      ElevatedButton(
+                      ElevatedButton.icon(
                         onPressed: () async {
                           if (minutes != null && minutes! > 0) {
                             await _db
@@ -421,7 +516,15 @@ class _ServicePageState extends State<ServicePage> {
                             Navigator.pop(context);
                           }
                         },
-                        child: const Text("Salvar"),
+                        icon: const Icon(Icons.save),
+                        label: const Text("Salvar"),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -451,14 +554,47 @@ class _ServicePageState extends State<ServicePage> {
       body: Column(
         children: [
           const SizedBox(height: 20),
-          const CircleAvatar(
-            radius: 40,
-            backgroundColor: AppTheme.primary,
-            child: Icon(Icons.person, size: 50, color: Colors.white),
+          
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection("salons")
+                .doc("my_salon")
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || !snapshot.data!.exists) {
+                return const CircleAvatar(
+                  radius: 40,
+                  backgroundColor: AppTheme.primary,
+                  child: Icon(Icons.person, size: 50, color: Colors.white),
+                );
+              }
+
+              final data = snapshot.data!.data() as Map<String, dynamic>;
+              final imagePath = data["imagePath"] as String?;
+              final nomeSalao = data["name"] ?? "Meu Salão";
+
+              return Column(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: AppTheme.primary,
+                    backgroundImage: (imagePath != null && imagePath.isNotEmpty)
+                        ? FileImage(File(imagePath))
+                        : null,
+                    child: (imagePath == null || imagePath.isEmpty)
+                        ? const Icon(Icons.person, size: 50, color: Colors.white)
+                        : null,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    nomeSalao,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 10),
-          const Text("Meu Salão",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+
           const SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -533,6 +669,7 @@ class _ServicePageState extends State<ServicePage> {
         final String path =
             '${directory.path}/${DateTime.now().millisecondsSinceEpoch}.png';
         final File localImage = await imageFile.copy(path);
+        final _imageSalon = salonImage;
 
         setState(() {
           salonImage = localImage;
@@ -549,7 +686,7 @@ class _ServicePageState extends State<ServicePage> {
       builder: (_) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.85,
+          initialChildSize: 0.8,
           minChildSize: 0.4,
           maxChildSize: 0.95,
           builder: (_, scrollController) {
@@ -563,91 +700,211 @@ class _ServicePageState extends State<ServicePage> {
                     right: 20,
                     top: 20,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text("Cadastro de Salão",
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 20),
-                      TextFormField(
-                        controller: nameController,
-                        decoration:
-                            const InputDecoration(labelText: "Nome do salão"),
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: cnpjController,
-                        decoration: const InputDecoration(labelText: "CNPJ"),
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: addressController,
-                        decoration: const InputDecoration(labelText: "Endereço"),
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: phoneController,
-                        decoration: const InputDecoration(labelText: "Telefone"),
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: hoursController,
-                        decoration: const InputDecoration(
-                            labelText: "Horário de funcionamento"),
-                      ),
-                      const SizedBox(height: 10),
-                      GestureDetector(
-                        onTap: () async {
-                          await _pickImage();
-                          setModalState(() {}); // Atualiza a imagem no modal
-                        },
-                        child: Container(
-                          height: 200,
-                          width: double.infinity,
-                          color: Colors.grey[300],
-                          child: salonImage != null
-                              ? Image.file(salonImage!, fit: BoxFit.cover)
-                              : const Center(
-                                  child: Text("Clique para adicionar uma imagem")),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                  child: Padding(
+                      padding: const EdgeInsets.all(0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("Cancelar")),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () async {
-                              // Salva os dados no Firebase (exceto a imagem)
-                              final salonData = {
-                                "name": nameController.text,
-                                "cnpj": cnpjController.text,
-                                "address": addressController.text,
-                                "phone": phoneController.text,
-                                "hours": hoursController.text,
-                                "updatedAt": FieldValue.serverTimestamp(),
-                              };
-
-                              // Você pode usar um doc fixo ou gerar aleatório
-                              await _db.collection("salons").doc("my_salon").set(salonData);
-
-                              // Opcional: print no console
-                              print("Salão salvo no Firebase!");
-                              print("Imagem local: ${salonImage?.path}");
-
-                              Navigator.pop(context);
-                            },
-                            child: const Text("Salvar"),
+                          Text(
+                            "Cadastro de Salão",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                    ],
+                          const SizedBox(height: 20),
+
+                          TextFormField(
+                            controller: nameController,
+                            decoration: InputDecoration(
+                              labelText: "Nome do salão",
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              prefixIcon: const Icon(Icons.store),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          TextFormField(
+                            controller: cnpjController,
+                            decoration: InputDecoration(
+                              labelText: "CNPJ",
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              prefixIcon: const Icon(Icons.badge),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          TextFormField(
+                            controller: addressController,
+                            decoration: InputDecoration(
+                              labelText: "Endereço",
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              prefixIcon: const Icon(Icons.location_on),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          TextFormField(
+                            controller: phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: InputDecoration(
+                              labelText: "Telefone",
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              prefixIcon: const Icon(Icons.phone),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          TextFormField(
+                            controller: hoursController,
+                            decoration: InputDecoration(
+                              labelText: "Horário de funcionamento",
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              prefixIcon: const Icon(Icons.access_time),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          GestureDetector(
+                            onTap: () async {
+                              await _pickImage();
+                              setModalState(() {});
+                            },
+                            child: Stack(
+                              children: [
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 400),
+                                  child: salonImage != null
+                                      ? ClipRRect(
+                                          key: ValueKey(salonImage!.path),
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: Image.file(
+                                            salonImage!,
+                                            fit: BoxFit.cover,
+                                            height: 200,
+                                            width: double.infinity,
+                                          ),
+                                        )
+                                      : (doc.exists && doc["imagePath"] != null)
+                                          ? ClipRRect(
+                                              key: ValueKey(doc["imagePath"]),
+                                              borderRadius: BorderRadius.circular(16),
+                                              child: Image.file(
+                                                File(doc["imagePath"]),
+                                                fit: BoxFit.cover,
+                                                height: 200,
+                                                width: double.infinity,
+                                              ),
+                                            )
+                                          : Container(
+                                              key: const ValueKey("placeholder"),
+                                              height: 200,
+                                              width: double.infinity,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(16),
+                                                color: Colors.grey[200],
+                                              ),
+                                              child: const Center(
+                                                child: Text(
+                                                  "Clique para adicionar uma imagem",
+                                                  style: TextStyle(
+                                                    color: Colors.black54,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                ),
+                                Positioned(
+                                  bottom: 10,
+                                  right: 10,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor.withOpacity(0.8),
+                                      borderRadius: BorderRadius.circular(50),
+                                    ),
+                                    child: const Icon(Icons.edit, color: Colors.white, size: 24),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.close),
+                                label: const Text("Cancelar"),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                  side: BorderSide(color: Colors.transparent),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  final existingImage = doc.exists ? doc["imagePath"] : null;
+
+                                  final salonData = {
+                                    "name": nameController.text,
+                                    "cnpj": cnpjController.text,
+                                    "address": addressController.text,
+                                    "phone": phoneController.text,
+                                    "hours": hoursController.text,
+                                    "imagePath": salonImage?.path ?? existingImage,
+                                    "updatedAt": FieldValue.serverTimestamp(),
+                                  };
+
+                                  await _db.collection("salons").doc("my_salon").set(salonData);
+
+                                  Navigator.pop(context);
+                                },
+                                icon: const Icon(Icons.save),
+                                label: const Text("Salvar"),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
