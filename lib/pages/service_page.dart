@@ -192,7 +192,25 @@ class _ServicePageState extends State<ServicePage> {
   Future<void> _addOrEditAgent({DocumentSnapshot? agent}) async {
     final formKey = GlobalKey<FormState>();
     String? name = agent?["name"];
-    List<String> shifts = List<String>.from(agent?["shifts"] ?? []);
+    String? surname = agent?["surname"];
+    String? phone = agent?["phone"];
+    String? email = agent?["email"];
+    String? imagePath = agent?["imagePath"];
+
+    File? agentImage = imagePath != null ? File(imagePath) : null;
+
+    Future<void> _pickImage() async {
+      final picker = ImagePicker();
+      final pickedImage = await picker.pickImage(source: ImageSource.gallery);
+      if (pickedImage != null) {
+        final File imageFile = File(pickedImage.path);
+        final directory = await getApplicationDocumentsDirectory();
+        final String path =
+            '${directory.path}/${DateTime.now().millisecondsSinceEpoch}.png';
+        final File localImage = await imageFile.copy(path);
+        agentImage = localImage;
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -203,106 +221,169 @@ class _ServicePageState extends State<ServicePage> {
       builder: (_) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.8,
+          initialChildSize: 0.85,
           minChildSize: 0.4,
           maxChildSize: 0.95,
           builder: (_, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 20,
-                right: 20,
-                top: 20,
-              ),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      agent == null ? "Novo Agente" : "Editar Agente",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: TextEditingController(text: name),
-                      decoration: InputDecoration(
-                        labelText: "Nome",
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        prefixIcon: const Icon(Icons.person),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      validator: (v) => v == null || v.isEmpty ? "Informe o nome" : null,
-                      onSaved: (v) => name = v,
-                    ),
-                    const SizedBox(height: 10),
-                    CheckboxListTile(
-                      title: const Text("Matutino"),
-                      value: shifts.contains("Matutino"),
-                      onChanged: (v) {
-                        v == true ? shifts.add("Matutino") : shifts.remove("Matutino");
-                        setState(() {});
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text("Noturno"),
-                      value: shifts.contains("Noturno"),
-                      onChanged: (v) {
-                        v == true ? shifts.add("Noturno") : shifts.remove("Noturno");
-                        setState(() {});
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                return SingleChildScrollView(
+                  controller: scrollController,
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                    left: 20,
+                    right: 20,
+                    top: 20,
+                  ),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        OutlinedButton.icon(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close),
-                          label: const Text("Cancelar"),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: BorderSide(color: Colors.transparent),
+                        Text(
+                          agent == null ? "Novo Agente" : "Editar Agente",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        GestureDetector(
+                          onTap: () async {
+                            await _pickImage();
+                            setModalState(() {});
+                          },
+                          child: Container(
+                            height: 150,
+                            width: double.infinity,
+                            color: Colors.grey[300],
+                            child: agentImage != null
+                                ? Image.file(agentImage!, fit: BoxFit.cover)
+                                : const Center(
+                                    child: Text("Clique para adicionar uma imagem"),
+                                  ),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: () async {
-                            if (formKey.currentState!.validate()) {
-                              formKey.currentState!.save();
-                              final data = {"name": name, "shifts": shifts};
-                              if (agent == null) {
-                                await _db.collection("agents").add(data);
-                              } else {
-                                await _db.collection("agents").doc(agent.id).update(data);
-                              }
-                              Navigator.pop(context);
-                              _showListDialog(
-                                "Agentes",
-                                "agents",
-                                () => _addOrEditAgent(),
-                                (doc) => _addOrEditAgent(agent: doc),
-                              );
-                            }
-                          },
-                          child: const Text("Salvar"),
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: TextEditingController(text: name),
+                          decoration: InputDecoration(
+                            labelText: "Nome",
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                            prefixIcon: const Icon(Icons.person),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          validator: (v) =>
+                              v == null || v.isEmpty ? "Informe o nome" : null,
+                          onSaved: (v) => name = v,
                         ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: TextEditingController(text: surname),
+                          decoration: InputDecoration(
+                            labelText: "Sobrenome",
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                            prefixIcon: const Icon(Icons.person_outline),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          onSaved: (v) => surname = v,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: TextEditingController(text: phone),
+                          decoration: InputDecoration(
+                            labelText: "Telefone",
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                            prefixIcon: const Icon(Icons.phone),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          keyboardType: TextInputType.phone,
+                          onSaved: (v) => phone = v,
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: TextEditingController(text: email),
+                          decoration: InputDecoration(
+                            labelText: "Email",
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                            prefixIcon: const Icon(Icons.email),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          onSaved: (v) => email = v,
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close),
+                              label: const Text("Cancelar"),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.red,
+                                side: BorderSide(color: Colors.transparent),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton(
+                              onPressed: () async {
+                                if (formKey.currentState!.validate()) {
+                                  formKey.currentState!.save();
+                                  final data = {
+                                    "name": name,
+                                    "surname": surname,
+                                    "phone": phone,
+                                    "email": email,
+                                    "imagePath": agentImage?.path ?? imagePath,
+                                  };
+                                  if (agent == null) {
+                                    await FirebaseFirestore.instance
+                                        .collection("agents")
+                                        .add(data);
+                                  } else {
+                                    await FirebaseFirestore.instance
+                                        .collection("agents")
+                                        .doc(agent.id)
+                                        .update(data);
+                                  }
+                                  Navigator.pop(context);
+                                  _showListDialog(
+                                    "Agentes",
+                                    "agents",
+                                    () => _addOrEditAgent(),
+                                    (doc) => _addOrEditAgent(agent: doc),
+                                  );
+                                }
+                              },
+                              child: const Text("Salvar"),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -365,14 +446,13 @@ class _ServicePageState extends State<ServicePage> {
                                 itemBuilder: (_, i) {
                                   final item = docs[i];
                                   return ListTile(
-                                    title: Text(item["name"] ?? ""),
+                                    title: Text((item["name" ?? ""]) + " " + (item["surname" ?? ""])),
                                     subtitle: collection == "services"
                                         ? Text(
                                             "Preço: R\$ ${(item["price"] as num?)?.toStringAsFixed(2) ?? "--"}\n"
                                             "Duração: ${item["duration"]?.toString() ?? "--"} min",
                                           )
-                                        : Text(
-                                            "Turnos: ${(item["shifts"] as List?)?.join(", ") ?? "--"}"),
+                                        : null,
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
@@ -573,22 +653,29 @@ class _ServicePageState extends State<ServicePage> {
               final imagePath = data["imagePath"] as String?;
               final nomeSalao = data["name"] ?? "Meu Salão";
 
+              ImageProvider? imageProvider;
+
+              if (imagePath != null && imagePath.isNotEmpty) {
+                final file = File(imagePath);
+                if (file.existsSync()) {
+                  imageProvider = FileImage(file);
+                }
+              }
+
               return Column(
                 children: [
                   CircleAvatar(
-                    radius: 40,
-                    backgroundColor: AppTheme.primary,
-                    backgroundImage: (imagePath != null && imagePath.isNotEmpty)
-                        ? FileImage(File(imagePath))
-                        : null,
-                    child: (imagePath == null || imagePath.isEmpty)
-                        ? const Icon(Icons.person, size: 50, color: Colors.white)
+                    radius: 25,
+                    backgroundImage: imageProvider,
+                    child: imageProvider == null
+                        ? const Icon(Icons.person, size: 25)
                         : null,
                   ),
                   const SizedBox(height: 10),
                   Text(
                     nomeSalao,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ],
               );

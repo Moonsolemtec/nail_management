@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nail_management/pages/event_page.dart';
 import 'package:nail_management/pages/service_page.dart';
@@ -18,11 +21,6 @@ class _LandingPageState extends State<LandingPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
 
-  final List<Map<String, String>> _professionals = const [
-    {"name": "Paola", "image": "./images/sem_imagem.jpg"},
-    {"name": "Heloísa", "image": "./images/sem_imagem.jpg"},
-  ];
-
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
@@ -34,22 +32,11 @@ class _LandingPageState extends State<LandingPage> {
       CalendarPage(
         focusedDay: _focusedDay,
         selectedDay: _selectedDay,
-        professionals: _professionals,
         onDaySelected: (selected, focused) {
           setState(() {
             _selectedDay = selected;
             _focusedDay = focused;
           });
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (context) {
-            return EventPage(selectedDate: selected);
-          },
-        );
         },
       ),
       const SettingsPage(),
@@ -88,51 +75,162 @@ class _LandingPageState extends State<LandingPage> {
   }
 }
 
-class CalendarPage extends StatelessWidget {
+class CalendarPage extends StatefulWidget {
   final DateTime focusedDay;
   final DateTime? selectedDay;
-  final List<Map<String, String>> professionals;
   final void Function(DateTime selectedDay, DateTime focusedDay) onDaySelected;
 
   const CalendarPage({
     super.key,
     required this.focusedDay,
     required this.selectedDay,
-    required this.professionals,
     required this.onDaySelected,
   });
 
   @override
+  State<CalendarPage> createState() => _CalendarPageState();
+}
+
+class _CalendarPageState extends State<CalendarPage> {
+  String? selectedAgentId;
+  List<Map<String, dynamic>> agents = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAgents();
+  }
+
+  Future<void> _loadAgents() async {
+    final snapshot = await FirebaseFirestore.instance.collection("agents").get();
+    setState(() {
+      agents = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          "id": doc.id,
+          "name": data["name"] ?? "",
+          "imagePath": data["imagePath"] ?? "",
+        };
+      }).toList();
+    });
+  }
+
+  void _selectAgent(String id) {
+    setState(() {
+      selectedAgentId = selectedAgentId == id ? null : id;
+    });
+  }
+
+  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    if (selectedAgentId == null) return; // não permite seleção se nenhum agente
+    widget.onDaySelected(selectedDay, focusedDay);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return EventPage(
+          selectedDate: selectedDay,
+          agentId: selectedAgentId!,
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Center(
-                child: ProfessionalsList(professionals: professionals),
-              ),
-            ),
-          ],
+        // Lista horizontal de agentes
+        SizedBox(
+          height: 150,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: agents.length,
+            itemBuilder: (context, index) {
+              final agent = agents[index];
+              final isSelected = agent["id"] == selectedAgentId;
+
+              ImageProvider? avatarImage;
+              if (agent["imagePath"].isNotEmpty) {
+                final file = File(agent["imagePath"]);
+                if (file.existsSync()) {
+                  avatarImage = FileImage(file);
+                }
+              }
+
+              return GestureDetector(
+                onTap: () => _selectAgent(agent["id"]),
+                child: Container(
+                  width: 110,
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: isSelected
+                          ? BorderSide(color: Theme.of(context).primaryColor, width: 2)
+                          : BorderSide.none,
+                    ),
+                    elevation: isSelected ? 4 : 2,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: avatarImage,
+                          child: avatarImage == null ? const Icon(Icons.person) : null,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          agent["name"],
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
+
+        // Calendário
         Padding(
           padding: const EdgeInsets.all(8),
-          child: Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TableCalendar(
-              focusedDay: focusedDay,
-              firstDay: DateTime.utc(2020, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              selectedDayPredicate: (day) => isSameDay(selectedDay, day),
-              onDaySelected: onDaySelected,
-              calendarStyle: _calendarStyle(context),
-              headerStyle: const HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
+          child: AbsorbPointer(
+            absorbing: selectedAgentId == null, // desabilita o calendário se nenhum agente
+            child: Opacity(
+              opacity: selectedAgentId == null ? 0.5 : 1.0, // efeito visual de desabilitado
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: TableCalendar(
+                  focusedDay: widget.focusedDay,
+                  firstDay: DateTime.utc(2020, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  selectedDayPredicate: (day) => isSameDay(widget.selectedDay, day),
+                  onDaySelected: _onDaySelected,
+                  calendarStyle: CalendarStyle(
+                    selectedDecoration: BoxDecoration(
+                      color: AppTheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    todayDecoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.primary, width: 2),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  headerStyle: const HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                  ),
+                ),
               ),
             ),
           ),
@@ -140,31 +238,13 @@ class CalendarPage extends StatelessWidget {
       ],
     );
   }
-
-  CalendarStyle _calendarStyle(BuildContext context) => CalendarStyle(
-        selectedDecoration: BoxDecoration(
-          color: AppTheme.primary,
-          shape: BoxShape.circle,
-        ),
-        todayDecoration: BoxDecoration(
-          border: Border.all(
-            color: AppTheme.primary,
-            width: 2,
-          ),
-          color: Colors.transparent,
-          shape: BoxShape.circle,
-        ),
-        todayTextStyle: TextStyle(
-          color: Theme.of(context).textTheme.bodyLarge!.color,
-          fontWeight: FontWeight.bold,
-        ),
-      );
 }
 
-class ProfessionalsList extends StatelessWidget {
-  final List<Map<String, String>> professionals;
 
-  const ProfessionalsList({super.key, required this.professionals});
+class ProfessionalsList extends StatelessWidget {
+  final List<Map<String, String>> agents;
+
+  const ProfessionalsList({super.key, required this.agents});
 
   @override
   Widget build(BuildContext context) {
@@ -173,12 +253,12 @@ class ProfessionalsList extends StatelessWidget {
       child: Center(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: professionals
-              .map((professional) => ProfessionalCard(
-                    name: professional["name"]!,
-                    imagePath: professional["image"]!,
-                  ))
-              .toList(),
+          children: agents.map((agent) {
+            return ProfessionalCard(
+              name: agent["name"]!,
+              imagePath: agent["imagePath"],
+            );
+          }).toList(),
         ),
       ),
     );
@@ -187,12 +267,25 @@ class ProfessionalsList extends StatelessWidget {
 
 class ProfessionalCard extends StatelessWidget {
   final String name;
-  final String imagePath;
+  final String? imagePath;
 
-  const ProfessionalCard({super.key, required this.name, required this.imagePath});
+  const ProfessionalCard({
+    super.key,
+    required this.name,
+    this.imagePath,
+  });
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider? avatarImage;
+
+    if (imagePath != null && imagePath!.isNotEmpty) {
+      final file = File(imagePath!);
+      if (file.existsSync()) {
+        avatarImage = FileImage(file);
+      }
+    }
+
     return Container(
       width: 100,
       margin: const EdgeInsets.only(right: 8),
@@ -202,7 +295,11 @@ class ProfessionalCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircleAvatar(backgroundImage: NetworkImage(imagePath), radius: 25),
+            CircleAvatar(
+              radius: 25,
+              backgroundImage: avatarImage,
+              child: avatarImage == null ? const Icon(Icons.person) : null,
+            ),
             const SizedBox(height: 6),
             Text(
               name,
@@ -215,3 +312,4 @@ class ProfessionalCard extends StatelessWidget {
     );
   }
 }
+
