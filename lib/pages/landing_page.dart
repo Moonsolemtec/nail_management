@@ -122,7 +122,7 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
-    if (selectedAgentId == null) return; // não permite seleção se nenhum agente
+    if (selectedAgentId == null) return; 
     widget.onDaySelected(selectedDay, focusedDay);
 
     showModalBottomSheet(
@@ -144,7 +144,6 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Lista horizontal de agentes
         SizedBox(
           height: 150,
           child: ListView.builder(
@@ -199,13 +198,12 @@ class _CalendarPageState extends State<CalendarPage> {
           ),
         ),
 
-        // Calendário
         Padding(
           padding: const EdgeInsets.all(8),
           child: AbsorbPointer(
-            absorbing: selectedAgentId == null, // desabilita o calendário se nenhum agente
+            absorbing: selectedAgentId == null, 
             child: Opacity(
-              opacity: selectedAgentId == null ? 0.5 : 1.0, // efeito visual de desabilitado
+              opacity: selectedAgentId == null ? 0.5 : 1.0,
               child: Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
