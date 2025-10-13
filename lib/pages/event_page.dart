@@ -43,7 +43,8 @@ class EventPage extends StatelessWidget {
         services = query.docs.map((d) => {
               "id": d.id,
               "name": d['name'] ?? 'Sem nome',
-            }).toList();
+              "agentId": d['agentId'],
+        }).toList();
       }
 
       Future<void> showAddClientDialog() async {
@@ -181,6 +182,7 @@ class EventPage extends StatelessWidget {
                       DropdownButtonFormField<String>(
                         value: selectedServiceId,
                         items: services
+                            .where((service) => service['agentId'] == agentId)
                             .map((service) => DropdownMenuItem<String>(
                                   value: service['id'],
                                   child: Text(service['name']),
@@ -210,8 +212,7 @@ class EventPage extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           IconButton(
-                            icon: const Icon(Icons.person_add_alt_1,
-                                color: Colors.blue),
+                            icon: const Icon(Icons.person_add_alt_1, color: Colors.blue),
                             tooltip: 'Cadastrar novo cliente',
                             onPressed: showAddClientDialog,
                           ),
@@ -235,9 +236,8 @@ class EventPage extends StatelessWidget {
                             initialTime: selectedTime,
                             builder: (context, child) {
                               return MediaQuery(
-                                data: MediaQuery.of(context).copyWith(
-                                  alwaysUse24HourFormat: true,
-                                ),
+                                data: MediaQuery.of(context)
+                                    .copyWith(alwaysUse24HourFormat: true),
                                 child: child!,
                               );
                             },
@@ -269,9 +269,7 @@ class EventPage extends StatelessWidget {
                 ),
                 actions: [
                   TextButton(
-                    onPressed: isLoading
-                        ? null
-                        : () => Navigator.pop(dialogContext),
+                    onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
                     child: const Text('Cancelar'),
                   ),
                   ElevatedButton(
@@ -300,9 +298,7 @@ class EventPage extends StatelessWidget {
                               selectedTime.minute,
                             );
 
-                            await FirebaseFirestore.instance
-                                .collection('events')
-                                .add({
+                            await FirebaseFirestore.instance.collection('events').add({
                               'serviceId': selectedServiceId,
                               'clientName': clientController.text.trim(),
                               'notes': notesController.text.trim().isNotEmpty
@@ -317,8 +313,7 @@ class EventPage extends StatelessWidget {
                               Navigator.pop(dialogContext);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content:
-                                      Text('✓ Agendamento criado com sucesso!'),
+                                  content: Text('✓ Agendamento criado com sucesso!'),
                                   backgroundColor: Colors.green,
                                   duration: Duration(seconds: 2),
                                 ),
@@ -356,7 +351,11 @@ class EventPage extends StatelessWidget {
       List<Map<String, dynamic>> services = [];
 
       Future<void> loadServices() async {
-        final query = await FirebaseFirestore.instance.collection('services').get();
+        final query = await FirebaseFirestore.instance
+            .collection('services')
+            .where('agentId', isEqualTo: agentId)
+            .get();
+
         services = query.docs.map((d) => {
               "id": d.id,
               "name": d['name'] ?? 'Sem nome',

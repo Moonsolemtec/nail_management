@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:nail_management/theme/app_theme.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,20 +16,25 @@ class ServicePage extends StatefulWidget {
 class _ServicePageState extends State<ServicePage> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // ------------------------------
-  // FORM DE SERVIÇOS
-  // ------------------------------
+  static const double _radius = 12;
+  static const double _gap = 12;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   Future<void> _addOrEditService({DocumentSnapshot? service}) async {
     final formKey = GlobalKey<FormState>();
     String? name = service?["name"];
-    String? price = service?["price"].toString();
-    String? duration = service?["duration"].toString();
+    String? price = service?["price"]?.toString();
+    String? duration = service?["duration"]?.toString();
     String? selectedAgent = service?["agentId"];
 
     final agentsSnapshot = await _db.collection("agents").get();
     final agents = agentsSnapshot.docs;
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -39,13 +44,13 @@ class _ServicePageState extends State<ServicePage> {
         return DraggableScrollableSheet(
           expand: false,
           initialChildSize: 0.8,
-          minChildSize: 0.4,
+          minChildSize: 0.45,
           maxChildSize: 0.95,
           builder: (_, scrollController) {
             return SingleChildScrollView(
               controller: scrollController,
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
                 left: 20,
                 right: 20,
                 top: 20,
@@ -64,73 +69,49 @@ class _ServicePageState extends State<ServicePage> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: TextEditingController(text: name),
-                      decoration: InputDecoration(
-                        labelText: "Nome",
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        prefixIcon: const Icon(Icons.content_cut),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      validator: (v) => v == null || v.isEmpty ? "Informe o nome" : null,
+                    const SizedBox(height: _gap),
+                    _buildFilledTextField(
+                      initialText: name,
+                      label: "Nome",
+                      icon: Icons.content_cut,
                       onSaved: (v) => name = v,
+                      validator: (v) => v == null || v.isEmpty ? "Informe o nome" : null,
                     ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: TextEditingController(text: price),
-                      decoration: InputDecoration(
-                        labelText: "Preço (R\$)",
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        prefixIcon: const Icon(Icons.attach_money),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                    const SizedBox(height: _gap),
+                    _buildFilledTextField(
+                      initialText: price,
+                      label: "Preço (R\$)",
+                      icon: Icons.attach_money,
                       keyboardType: TextInputType.number,
-                      validator: (v) => v == null || v.isEmpty ? "Informe o preço" : null,
                       onSaved: (v) => price = v,
+                      validator: (v) => v == null || v.isEmpty ? "Informe o preço" : null,
                     ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      controller: TextEditingController(text: duration),
-                      decoration: InputDecoration(
-                        labelText: "Tempo (min)",
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        prefixIcon: const Icon(Icons.timer),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                    const SizedBox(height: _gap),
+                    _buildFilledTextField(
+                      initialText: duration,
+                      label: "Tempo (min)",
+                      icon: Icons.timer,
                       keyboardType: TextInputType.number,
-                      validator: (v) => v == null || v.isEmpty ? "Informe o tempo" : null,
                       onSaved: (v) => duration = v,
+                      validator: (v) => v == null || v.isEmpty ? "Informe o tempo" : null,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: _gap),
                     DropdownButtonFormField<String>(
                       value: agents.any((a) => a.id == selectedAgent) ? selectedAgent : null,
                       decoration: InputDecoration(
-                        labelText: ("Agente"), 
+                        labelText: "Agente",
                         filled: true,
                         fillColor: Colors.grey[100],
                         prefixIcon: const Icon(Icons.person),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(_radius),
                           borderSide: BorderSide.none,
                         ),
                       ),
                       items: agents
                           .map((a) => DropdownMenuItem(
                                 value: a.id,
-                                child: Text(a["name"]),
+                                child: Text(a["name"] ?? ""),
                               ))
                           .toList(),
                       onChanged: (v) => selectedAgent = v,
@@ -144,13 +125,15 @@ class _ServicePageState extends State<ServicePage> {
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.close),
                           label: const Text("Cancelar"),
-                          style: TextButton.styleFrom(
+                          style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.red,
-                            side: BorderSide(color: Colors.transparent),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(_radius),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
                           onPressed: () async {
                             if (formKey.currentState!.validate()) {
                               formKey.currentState!.save();
@@ -159,6 +142,7 @@ class _ServicePageState extends State<ServicePage> {
                                 "price": double.tryParse(price ?? "0"),
                                 "duration": int.tryParse(duration ?? "0"),
                                 "agentId": selectedAgent,
+                                "updatedAt": FieldValue.serverTimestamp(),
                               };
                               if (service == null) {
                                 await _db.collection("services").add(data);
@@ -166,12 +150,15 @@ class _ServicePageState extends State<ServicePage> {
                                 await _db.collection("services").doc(service.id).update(data);
                               }
                               Navigator.pop(context);
-                              _showListDialog("Serviços", "services",
-                                  () => _addOrEditService(),
-                                  (doc) => _addOrEditService(service: doc));
                             }
                           },
-                          child: const Text("Salvar"),
+                          icon: const Icon(Icons.save),
+                          label: const Text("Salvar"),
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(_radius),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -179,16 +166,13 @@ class _ServicePageState extends State<ServicePage> {
                   ],
                 ),
               ),
-            );          
+            );
           },
         );
       },
     );
   }
 
-  // ------------------------------
-  // FORM DE AGENTES
-  // ------------------------------
   Future<void> _addOrEditAgent({DocumentSnapshot? agent}) async {
     final formKey = GlobalKey<FormState>();
     String? name = agent?["name"];
@@ -199,7 +183,7 @@ class _ServicePageState extends State<ServicePage> {
 
     File? agentImage = imagePath != null ? File(imagePath) : null;
 
-    Future<void> _pickImage() async {
+    Future<void> _pickImage(StateSetter setModalState) async {
       final picker = ImagePicker();
       final pickedImage = await picker.pickImage(source: ImageSource.gallery);
       if (pickedImage != null) {
@@ -209,10 +193,11 @@ class _ServicePageState extends State<ServicePage> {
             '${directory.path}/${DateTime.now().millisecondsSinceEpoch}.png';
         final File localImage = await imageFile.copy(path);
         agentImage = localImage;
+        setModalState(() {});
       }
     }
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -222,7 +207,7 @@ class _ServicePageState extends State<ServicePage> {
         return DraggableScrollableSheet(
           expand: false,
           initialChildSize: 0.85,
-          minChildSize: 0.4,
+          minChildSize: 0.45,
           maxChildSize: 0.95,
           builder: (_, scrollController) {
             return StatefulBuilder(
@@ -230,7 +215,7 @@ class _ServicePageState extends State<ServicePage> {
                 return SingleChildScrollView(
                   controller: scrollController,
                   padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 20,
                     left: 20,
                     right: 20,
                     top: 20,
@@ -249,84 +234,61 @@ class _ServicePageState extends State<ServicePage> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: _gap),
                         GestureDetector(
-                          onTap: () async {
-                            await _pickImage();
-                            setModalState(() {});
-                          },
+                          onTap: () => _pickImage(setModalState),
                           child: Container(
                             height: 150,
                             width: double.infinity,
-                            color: Colors.grey[300],
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(_radius),
+                              color: Colors.grey[100],
+                            ),
+                            clipBehavior: Clip.antiAlias,
                             child: agentImage != null
                                 ? Image.file(agentImage!, fit: BoxFit.cover)
-                                : const Center(
-                                    child: Text("Clique para adicionar uma imagem"),
-                                  ),
+                                : (imagePath != null && imagePath.isNotEmpty && File(imagePath).existsSync())
+                                    ? Image.file(File(imagePath), fit: BoxFit.cover)
+                                    : Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.camera_alt, size: 32, color: Colors.grey[600]),
+                                            const SizedBox(height: 8),
+                                            Text("Adicionar foto do agente", style: TextStyle(color: Colors.grey[600])),
+                                          ],
+                                        ),
+                                      ),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        TextFormField(
-                          controller: TextEditingController(text: name),
-                          decoration: InputDecoration(
-                            labelText: "Nome",
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                            prefixIcon: const Icon(Icons.person),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                          validator: (v) =>
-                              v == null || v.isEmpty ? "Informe o nome" : null,
+                        const SizedBox(height: _gap),
+                        _buildFilledTextField(
+                          initialText: name,
+                          label: "Nome",
+                          icon: Icons.person,
                           onSaved: (v) => name = v,
+                          validator: (v) => v == null || v.isEmpty ? "Informe o nome" : null,
                         ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: TextEditingController(text: surname),
-                          decoration: InputDecoration(
-                            labelText: "Sobrenome",
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                            prefixIcon: const Icon(Icons.person_outline),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
+                        const SizedBox(height: _gap),
+                        _buildFilledTextField(
+                          initialText: surname,
+                          label: "Sobrenome",
+                          icon: Icons.person_outline,
                           onSaved: (v) => surname = v,
                         ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: TextEditingController(text: phone),
-                          decoration: InputDecoration(
-                            labelText: "Telefone",
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                            prefixIcon: const Icon(Icons.phone),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
+                        const SizedBox(height: _gap),
+                        _buildFilledTextField(
+                          initialText: phone,
+                          label: "Telefone",
+                          icon: Icons.phone,
                           keyboardType: TextInputType.phone,
                           onSaved: (v) => phone = v,
                         ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: TextEditingController(text: email),
-                          decoration: InputDecoration(
-                            labelText: "Email",
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                            prefixIcon: const Icon(Icons.email),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
+                        const SizedBox(height: _gap),
+                        _buildFilledTextField(
+                          initialText: email,
+                          label: "Email",
+                          icon: Icons.email,
                           keyboardType: TextInputType.emailAddress,
                           onSaved: (v) => email = v,
                         ),
@@ -338,13 +300,15 @@ class _ServicePageState extends State<ServicePage> {
                               onPressed: () => Navigator.pop(context),
                               icon: const Icon(Icons.close),
                               label: const Text("Cancelar"),
-                              style: TextButton.styleFrom(
+                              style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.red,
-                                side: BorderSide(color: Colors.transparent),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(_radius),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
                               onPressed: () async {
                                 if (formKey.currentState!.validate()) {
                                   formKey.currentState!.save();
@@ -354,27 +318,24 @@ class _ServicePageState extends State<ServicePage> {
                                     "phone": phone,
                                     "email": email,
                                     "imagePath": agentImage?.path ?? imagePath,
+                                    "updatedAt": FieldValue.serverTimestamp(),
                                   };
                                   if (agent == null) {
-                                    await FirebaseFirestore.instance
-                                        .collection("agents")
-                                        .add(data);
+                                    await _db.collection("agents").add(data);
                                   } else {
-                                    await FirebaseFirestore.instance
-                                        .collection("agents")
-                                        .doc(agent.id)
-                                        .update(data);
+                                    await _db.collection("agents").doc(agent.id).update(data);
                                   }
+                                  await _reloadAgents();
                                   Navigator.pop(context);
-                                  _showListDialog(
-                                    "Agentes",
-                                    "agents",
-                                    () => _addOrEditAgent(),
-                                    (doc) => _addOrEditAgent(agent: doc),
-                                  );
                                 }
                               },
-                              child: const Text("Salvar"),
+                              icon: const Icon(Icons.save),
+                              label: const Text("Salvar"),
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(_radius),
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -391,12 +352,8 @@ class _ServicePageState extends State<ServicePage> {
     );
   }
 
-  // ------------------------------
-  // LISTAGEM
-  // ------------------------------
-  void _showListDialog(String title, String collection, VoidCallback onAdd,
-      Function(DocumentSnapshot) onEdit) {
-    showModalBottomSheet(
+  Future<void> _showListDialog(String title, String collection, VoidCallback onAdd, Function(DocumentSnapshot) onEdit) async {
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -410,7 +367,7 @@ class _ServicePageState extends State<ServicePage> {
           maxChildSize: 0.95,
           builder: (_, scrollController) {
             return StreamBuilder<QuerySnapshot>(
-              stream: _db.collection(collection).snapshots(),
+              stream: _db.collection(collection).orderBy("name").snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return const Center(child: Text("Erro ao carregar dados."));
@@ -434,41 +391,33 @@ class _ServicePageState extends State<ServicePage> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 20),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
                       Expanded(
                         child: docs.isEmpty
-                            ? const Center(
-                                child: Text("Nenhum item cadastrado."))
-                            : ListView.builder(
+                            ? const Center(child: Text("Nenhum item cadastrado."))
+                            : ListView.separated(
                                 controller: scrollController,
                                 itemCount: docs.length,
+                                separatorBuilder: (_, __) => const Divider(height: 8),
                                 itemBuilder: (_, i) {
                                   final item = docs[i];
+                                  final titleText = (item.data() as Map<String, dynamic>)["name"] ?? "";
                                   return ListTile(
-                                    title: Text((item["name" ?? ""]) + " " + (item["surname" ?? ""])),
-                                    subtitle: collection == "services"
-                                        ? Text(
-                                            "Preço: R\$ ${(item["price"] as num?)?.toStringAsFixed(2) ?? "--"}\n"
-                                            "Duração: ${item["duration"]?.toString() ?? "--"} min",
-                                          )
-                                        : null,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    title: Text(titleText, style: const TextStyle(fontWeight: FontWeight.w600)),
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.edit,
-                                              color: Colors.blue),
+                                          icon: const Icon(Icons.edit, color: Colors.blue),
                                           onPressed: () {
                                             Navigator.pop(context);
                                             onEdit(item);
                                           },
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.delete,
-                                              color: Colors.red),
-                                          onPressed: () => _deleteItem(
-                                              collection, item.id),
+                                          icon: const Icon(Icons.delete, color: Colors.red),
+                                          onPressed: () => _deleteItem(collection, item.id),
                                         ),
                                       ],
                                     ),
@@ -476,7 +425,7 @@ class _ServicePageState extends State<ServicePage> {
                                 },
                               ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -484,12 +433,14 @@ class _ServicePageState extends State<ServicePage> {
                             onPressed: () => Navigator.pop(context),
                             icon: const Icon(Icons.close),
                             label: const Text("Fechar"),
-                            style: TextButton.styleFrom(
+                            style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.red,
-                              side: BorderSide(color: Colors.transparent),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(_radius),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           ElevatedButton.icon(
                             onPressed: () {
                               Navigator.pop(context);
@@ -497,6 +448,11 @@ class _ServicePageState extends State<ServicePage> {
                             },
                             icon: const Icon(Icons.add),
                             label: const Text("Novo"),
+                            style: ElevatedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(_radius),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -511,50 +467,34 @@ class _ServicePageState extends State<ServicePage> {
     );
   }
 
-  // ------------------------------
-  // INTERVALO
-  // ------------------------------
   Future<void> _setInterval() async {
     final doc = await _db.collection("settings").doc("schedule").get();
     int? minutes = doc.exists ? doc["interval"] : null;
     final controller = TextEditingController(text: minutes?.toString() ?? "");
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.8,
-          minChildSize: 0.4,
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
           maxChildSize: 0.95,
           builder: (_, scrollController) {
             return SingleChildScrollView(
               controller: scrollController,
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 20,
-                right: 20,
-                top: 20,
-              ),
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, left: 20, right: 20, top: 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     "Intervalo Entre Agendamentos",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 20),
-
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: controller,
                     keyboardType: TextInputType.number,
@@ -562,17 +502,12 @@ class _ServicePageState extends State<ServicePage> {
                       labelText: "Minutos",
                       filled: true,
                       fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(_radius), borderSide: BorderSide.none),
                       prefixIcon: const Icon(Icons.timer),
                     ),
                     onChanged: (v) => minutes = int.tryParse(v),
                   ),
-
-                  const SizedBox(height: 30),
-
+                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -580,30 +515,24 @@ class _ServicePageState extends State<ServicePage> {
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.close),
                         label: const Text("Cancelar"),
-                        style: TextButton.styleFrom(
+                        style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
-                          side: BorderSide(color: Colors.transparent),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_radius)),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       ElevatedButton.icon(
                         onPressed: () async {
                           if (minutes != null && minutes! > 0) {
-                            await _db
-                                .collection("settings")
-                                .doc("schedule")
-                                .set({"interval": minutes});
+                            await _db.collection("settings").doc("schedule").set({"interval": minutes});
                             Navigator.pop(context);
                           }
                         },
                         icon: const Icon(Icons.save),
                         label: const Text("Salvar"),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_radius)),
                         ),
                       ),
                     ],
@@ -618,28 +547,55 @@ class _ServicePageState extends State<ServicePage> {
     );
   }
 
-  // ------------------------------
-  // DELETE ITEM
-  // ------------------------------
   Future<void> _deleteItem(String collection, String id) async {
     await _db.collection(collection).doc(id).delete();
+    if (collection == "agents") await _reloadAgents();
   }
 
-  // ------------------------------
-  // UI PRINCIPAL
-  // ------------------------------
+  Widget _buildMenuItem({required IconData icon, required String text, required VoidCallback onTap}) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.black),
+      title: Text(text),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildFilledTextField({
+    String? initialText,
+    required String label,
+    IconData? icon,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+    void Function(String?)? onSaved,
+  }) {
+    return TextFormField(
+      initialValue: initialText,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.grey[100],
+        prefixIcon: icon != null ? Icon(icon) : null,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(_radius), borderSide: BorderSide.none),
+      ),
+      keyboardType: keyboardType,
+      validator: validator,
+      onSaved: onSaved,
+    );
+  }
+
+  Future<void> _reloadAgents() async {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
           const SizedBox(height: 20),
-          
           StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection("salons")
-                .doc("my_salon")
-                .snapshots(),
+            stream: _db.collection("salons").doc("my_salon").snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData || !snapshot.data!.exists) {
                 return const CircleAvatar(
@@ -648,41 +604,29 @@ class _ServicePageState extends State<ServicePage> {
                   child: Icon(Icons.person, size: 50, color: Colors.white),
                 );
               }
-
               final data = snapshot.data!.data() as Map<String, dynamic>;
               final imagePath = data["imagePath"] as String?;
               final nomeSalao = data["name"] ?? "Meu Salão";
-
               ImageProvider? imageProvider;
-
               if (imagePath != null && imagePath.isNotEmpty) {
                 final file = File(imagePath);
-                if (file.existsSync()) {
-                  imageProvider = FileImage(file);
-                }
+                if (file.existsSync()) imageProvider = FileImage(file);
               }
-
               return Column(
                 children: [
                   CircleAvatar(
-                    radius: 25,
+                    radius: 40,
                     backgroundImage: imageProvider,
-                    child: imageProvider == null
-                        ? const Icon(Icons.person, size: 25)
-                        : null,
+                    backgroundColor: AppTheme.primary,
+                    child: imageProvider == null ? const Icon(Icons.store, size: 40, color: Colors.white) : null,
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    nomeSalao,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  Text(nomeSalao, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
               );
             },
           ),
-
-          const SizedBox(height: 30),
+          const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
@@ -690,23 +634,13 @@ class _ServicePageState extends State<ServicePage> {
                 _buildMenuItem(
                   icon: Icons.content_cut,
                   text: "Serviços",
-                  onTap: () => _showListDialog(
-                    "Serviços",
-                    "services",
-                    () => _addOrEditService(),
-                    (doc) => _addOrEditService(service: doc),
-                  ),
+                  onTap: () => _showListDialog("Serviços", "services", () => _addOrEditService(), (doc) => _addOrEditService(service: doc)),
                 ),
                 const Divider(height: 5),
                 _buildMenuItem(
                   icon: Icons.star_border,
                   text: "Agentes",
-                  onTap: () => _showListDialog(
-                    "Agentes",
-                    "agents",
-                    () => _addOrEditAgent(),
-                    (doc) => _addOrEditAgent(agent: doc),
-                  ),
+                  onTap: () => _showListDialog("Agentes", "agents", () => _addOrEditAgent(), (doc) => _addOrEditAgent(agent: doc)),
                 ),
                 const Divider(height: 5),
                 _buildMenuItem(
@@ -716,7 +650,7 @@ class _ServicePageState extends State<ServicePage> {
                 ),
                 const Divider(height: 5),
                 _buildMenuItem(
-                    icon: Icons.home_work,
+                  icon: Icons.home_work,
                   text: "Salão",
                   onTap: () => _registerSalon(context),
                 ),
@@ -727,10 +661,7 @@ class _ServicePageState extends State<ServicePage> {
       ),
     );
   }
-  
-  // ------------------------------
-  // Salon Registration
-  // ------------------------------
+
   Future<void> _registerSalon(BuildContext context) async {
     final doc = await _db.collection("salons").doc("my_salon").get();
     String? address = doc.exists ? doc["address"] : null;
@@ -745,251 +676,113 @@ class _ServicePageState extends State<ServicePage> {
     final TextEditingController hoursController = TextEditingController(text: hours ?? "");
 
     File? salonImage;
+    String? existingImage = doc.exists ? doc["imagePath"] : null;
 
-    Future<void> _pickImage() async {
+    Future<void> _pickImage(StateSetter setModalState) async {
       final picker = ImagePicker();
       final pickedImage = await picker.pickImage(source: ImageSource.gallery);
-
       if (pickedImage != null) {
         final File imageFile = File(pickedImage.path);
         final directory = await getApplicationDocumentsDirectory();
-        final String path =
-            '${directory.path}/${DateTime.now().millisecondsSinceEpoch}.png';
+        final String path = '${directory.path}/${DateTime.now().millisecondsSinceEpoch}.png';
         final File localImage = await imageFile.copy(path);
-        final _imageSalon = salonImage;
-
-        setState(() {
-          salonImage = localImage;
-        });
+        salonImage = localImage;
+        setModalState(() {});
       }
     }
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.8,
-          minChildSize: 0.4,
+          initialChildSize: 0.85,
+          minChildSize: 0.45,
           maxChildSize: 0.95,
           builder: (_, scrollController) {
             return StatefulBuilder(
               builder: (context, setModalState) {
                 return SingleChildScrollView(
                   controller: scrollController,
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom,
-                    left: 20,
-                    right: 20,
-                    top: 20,
-                  ),
+                  padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, left: 20, right: 20, top: 20),
                   child: Padding(
-                      padding: const EdgeInsets.all(0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "Cadastro de Salão",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-
-                          TextFormField(
-                            controller: nameController,
-                            decoration: InputDecoration(
-                              labelText: "Nome do salão",
-                              filled: true,
-                              fillColor: Colors.grey[100],
-                              prefixIcon: const Icon(Icons.store),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          TextFormField(
-                            controller: cnpjController,
-                            decoration: InputDecoration(
-                              labelText: "CNPJ",
-                              filled: true,
-                              fillColor: Colors.grey[100],
-                              prefixIcon: const Icon(Icons.badge),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          TextFormField(
-                            controller: addressController,
-                            decoration: InputDecoration(
-                              labelText: "Endereço",
-                              filled: true,
-                              fillColor: Colors.grey[100],
-                              prefixIcon: const Icon(Icons.location_on),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          TextFormField(
-                            controller: phoneController,
-                            keyboardType: TextInputType.phone,
-                            decoration: InputDecoration(
-                              labelText: "Telefone",
-                              filled: true,
-                              fillColor: Colors.grey[100],
-                              prefixIcon: const Icon(Icons.phone),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          TextFormField(
-                            controller: hoursController,
-                            decoration: InputDecoration(
-                              labelText: "Horário de funcionamento",
-                              filled: true,
-                              fillColor: Colors.grey[100],
-                              prefixIcon: const Icon(Icons.access_time),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          GestureDetector(
-                            onTap: () async {
-                              await _pickImage();
-                              setModalState(() {});
-                            },
-                            child: Stack(
-                              children: [
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 400),
-                                  child: salonImage != null
-                                      ? ClipRRect(
-                                          key: ValueKey(salonImage!.path),
-                                          borderRadius: BorderRadius.circular(16),
-                                          child: Image.file(
-                                            salonImage!,
-                                            fit: BoxFit.cover,
-                                            height: 200,
-                                            width: double.infinity,
-                                          ),
-                                        )
-                                      : (doc.exists && doc["imagePath"] != null)
-                                          ? ClipRRect(
-                                              key: ValueKey(doc["imagePath"]),
-                                              borderRadius: BorderRadius.circular(16),
-                                              child: Image.file(
-                                                File(doc["imagePath"]),
-                                                fit: BoxFit.cover,
-                                                height: 200,
-                                                width: double.infinity,
-                                              ),
-                                            )
-                                          : Container(
-                                              key: const ValueKey("placeholder"),
-                                              height: 200,
-                                              width: double.infinity,
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(16),
-                                                color: Colors.grey[200],
-                                              ),
-                                              child: const Center(
-                                                child: Text(
-                                                  "Clique para adicionar uma imagem",
-                                                  style: TextStyle(
-                                                    color: Colors.black54,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                ),
-                                Positioned(
-                                  bottom: 10,
-                                  right: 10,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).primaryColor.withOpacity(0.8),
-                                      borderRadius: BorderRadius.circular(50),
-                                    ),
-                                    child: const Icon(Icons.edit, color: Colors.white, size: 24),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                    padding: const EdgeInsets.all(0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text("Cadastro de Salão", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: nameController,
+                          decoration: InputDecoration(labelText: "Nome do salão", prefixIcon: const Icon(Icons.store), filled: true, fillColor: Colors.grey[100], border: OutlineInputBorder(borderRadius: BorderRadius.circular(_radius), borderSide: BorderSide.none)),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: cnpjController,
+                          decoration: InputDecoration(labelText: "CNPJ", prefixIcon: const Icon(Icons.badge), filled: true, fillColor: Colors.grey[100], border: OutlineInputBorder(borderRadius: BorderRadius.circular(_radius), borderSide: BorderSide.none)),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: addressController,
+                          decoration: InputDecoration(labelText: "Endereço", prefixIcon: const Icon(Icons.location_on), filled: true, fillColor: Colors.grey[100], border: OutlineInputBorder(borderRadius: BorderRadius.circular(_radius), borderSide: BorderSide.none)),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(labelText: "Telefone", prefixIcon: const Icon(Icons.phone), filled: true, fillColor: Colors.grey[100], border: OutlineInputBorder(borderRadius: BorderRadius.circular(_radius), borderSide: BorderSide.none)),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: hoursController,
+                          decoration: InputDecoration(labelText: "Horário de funcionamento", prefixIcon: const Icon(Icons.access_time), filled: true, fillColor: Colors.grey[100], border: OutlineInputBorder(borderRadius: BorderRadius.circular(_radius), borderSide: BorderSide.none)),
+                        ),
+                        const SizedBox(height: 16),
+                        GestureDetector(
+                          onTap: () => _pickImage(setModalState),
+                          child: Stack(
                             children: [
-                              OutlinedButton.icon(
-                                onPressed: () => Navigator.pop(context),
-                                icon: const Icon(Icons.close),
-                                label: const Text("Cancelar"),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                  side: BorderSide(color: Colors.transparent),
-                                ),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 400),
+                                child: salonImage != null
+                                    ? ClipRRect(key: ValueKey(salonImage!.path), borderRadius: BorderRadius.circular(16), child: Image.file(salonImage!, fit: BoxFit.cover, height: 200, width: double.infinity))
+                                    : (existingImage != null && existingImage.isNotEmpty && File(existingImage).existsSync())
+                                        ? ClipRRect(key: ValueKey(existingImage), borderRadius: BorderRadius.circular(16), child: Image.file(File(existingImage), fit: BoxFit.cover, height: 200, width: double.infinity))
+                                        : Container(key: const ValueKey("placeholder"), height: 200, width: double.infinity, decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: Colors.grey[200]), child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.camera_alt, size: 28, color: Colors.grey[600]), const SizedBox(height: 8), Text("Clique para adicionar uma imagem", style: TextStyle(color: Colors.grey[600]))]))),
                               ),
-                              const SizedBox(width: 12),
-                              ElevatedButton.icon(
-                                onPressed: () async {
-                                  final existingImage = doc.exists ? doc["imagePath"] : null;
-
-                                  final salonData = {
-                                    "name": nameController.text,
-                                    "cnpj": cnpjController.text,
-                                    "address": addressController.text,
-                                    "phone": phoneController.text,
-                                    "hours": hoursController.text,
-                                    "imagePath": salonImage?.path ?? existingImage,
-                                    "updatedAt": FieldValue.serverTimestamp(),
-                                  };
-
-                                  await _db.collection("salons").doc("my_salon").set(salonData);
-
-                                  Navigator.pop(context);
-                                },
-                                icon: const Icon(Icons.save),
-                                label: const Text("Salvar"),
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
+                              Positioned(bottom: 10, right: 10, child: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Theme.of(context).primaryColor.withOpacity(0.85), borderRadius: BorderRadius.circular(50)), child: const Icon(Icons.edit, color: Colors.white, size: 20))),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            OutlinedButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close), label: const Text("Cancelar"), style: OutlinedButton.styleFrom(foregroundColor: Colors.red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_radius)))),
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                final salonData = {
+                                  "name": nameController.text,
+                                  "cnpj": cnpjController.text,
+                                  "address": addressController.text,
+                                  "phone": phoneController.text,
+                                  "hours": hoursController.text,
+                                  "imagePath": salonImage?.path ?? existingImage,
+                                  "updatedAt": FieldValue.serverTimestamp(),
+                                };
+                                await _db.collection("salons").doc("my_salon").set(salonData);
+                                Navigator.pop(context);
+                              },
+                              icon: const Icon(Icons.save),
+                              label: const Text("Salvar"),
+                              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_radius))),
+                            ),
                           ],
                         ),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -999,19 +792,6 @@ class _ServicePageState extends State<ServicePage> {
           },
         );
       },
-    );
-  }
-
-
-  Widget _buildMenuItem(
-      {required IconData icon,
-      required String text,
-      required VoidCallback onTap}) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.black),
-      title: Text(text),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
     );
   }
 }

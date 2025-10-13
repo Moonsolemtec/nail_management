@@ -27,20 +27,28 @@ class _LandingPageState extends State<LandingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      const ServicePage(),
-      CalendarPage(
-        focusedDay: _focusedDay,
-        selectedDay: _selectedDay,
-        onDaySelected: (selected, focused) {
-          setState(() {
-            _selectedDay = selected;
-            _focusedDay = focused;
-          });
-        },
-      ),
-      const SettingsPage(),
-    ];
+    Widget _buildPage(int index) {
+      switch (index) {
+        case 0:
+          return ServicePage(key: ValueKey("service_page_${DateTime.now().millisecondsSinceEpoch}"));
+        case 1:
+          return CalendarPage(
+            key: ValueKey("calendar_page_${DateTime.now().millisecondsSinceEpoch}"),
+            focusedDay: _focusedDay,
+            selectedDay: _selectedDay,
+            onDaySelected: (selected, focused) {
+              setState(() {
+                _selectedDay = selected;
+                _focusedDay = focused;
+              });
+            },
+          );
+        case 2:
+          return SettingsPage(key: ValueKey("settings_page_${DateTime.now().millisecondsSinceEpoch}"));
+        default:
+          return const SizedBox.shrink();
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -53,10 +61,7 @@ class _LandingPageState extends State<LandingPage> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: pages,
-      ),
+      body: _buildPage(_selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
