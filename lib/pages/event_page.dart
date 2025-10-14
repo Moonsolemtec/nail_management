@@ -821,36 +821,56 @@ class EventPage extends StatelessWidget {
                                     if (value == 'edit') {
                                       showEditEventDialog(context, eventDoc);
                                     } else if (value == 'delete') {
-                                      await eventDoc.reference.delete();
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Agendamento excluído'),
-                                          backgroundColor: Colors.redAccent,
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          title: const Row(
+                                            children: [
+                                              Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                                              SizedBox(width: 8),
+                                              Text('Confirmar exclusão'),
+                                            ],
+                                          ),
+                                          content: const Text(
+                                            'Tem certeza que deseja excluir este agendamento?',
+                                            style: TextStyle(fontSize: 16),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx, false),
+                                              child: const Text('Cancelar'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(ctx, true),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              child: const Text('Excluir'),
+                                            ),
+                                          ],
                                         ),
                                       );
+
+                                      if (confirmed == true) {
+                                        await eventDoc.reference.delete();
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('✓ Agendamento excluído'),
+                                              backgroundColor: Colors.redAccent,
+                                            ),
+                                          );
+                                        }
+                                      }
                                     }
                                   },
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.edit, color: Colors.blue),
-                                          SizedBox(width: 8),
-                                          Text('Editar'),
-                                        ],
-                                      ),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete, color: Colors.red),
-                                          SizedBox(width: 8),
-                                          Text('Excluir'),
-                                        ],
-                                      ),
-                                    ),
+                                  itemBuilder: (context) => <PopupMenuEntry<String>>[
+                                    const PopupMenuItem<String>(value: 'edit', child: Text('Editar')),
+                                    const PopupMenuItem<String>(value: 'delete', child: Text('Excluir')),
                                   ],
                                 ),
                               ),

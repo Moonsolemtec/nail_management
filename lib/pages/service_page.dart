@@ -401,7 +401,53 @@ class _ServicePageState extends State<ServicePage> {
                                 separatorBuilder: (_, __) => const Divider(height: 8),
                                 itemBuilder: (_, i) {
                                   final item = docs[i];
-                                  final titleText = (item.data() as Map<String, dynamic>)["name"] ?? "";
+                                  final data = item.data() as Map<String, dynamic>;
+                                  final titleText = data["name"] ?? "";
+                                  
+                                  if (collection == "services" && data["agentId"] != null) {
+                                    return FutureBuilder<DocumentSnapshot>(
+                                      future: _db.collection("agents").doc(data["agentId"]).get(),
+                                      builder: (context, agentSnapshot) {
+                                        String agentName = "Agente não encontrado";
+                                        if (agentSnapshot.hasData && agentSnapshot.data!.exists) {
+                                          final agentData = agentSnapshot.data!.data() as Map<String, dynamic>;
+                                          agentName = agentData["name"] ?? "Sem nome";
+                                        }
+                                        
+                                        return ListTile(
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                          title: Text(
+                                            titleText,
+                                            style: const TextStyle(fontWeight: FontWeight.w600),
+                                          ),
+                                          subtitle: Text(
+                                            "Agente: $agentName",
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                  onEdit(item);
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete, color: Colors.red),
+                                                onPressed: () => _confirmDelete(collection, item.id),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  }
+                                  
                                   return ListTile(
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                     title: Text(titleText, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -417,7 +463,7 @@ class _ServicePageState extends State<ServicePage> {
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.delete, color: Colors.red),
-                                          onPressed: () => _deleteItem(collection, item.id),
+                                          onPressed: () => _confirmDelete(collection, item.id),
                                         ),
                                       ],
                                     ),
@@ -545,6 +591,46 @@ class _ServicePageState extends State<ServicePage> {
         );
       },
     );
+  }
+
+  Future<void> _confirmDelete(String collection, String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Confirmar exclusão'),
+          ],
+        ),
+        content: Text(
+          'Tem certeza que deseja excluir este ${collection == "services" ? "serviço" : "agente"}?',
+          style: const TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteItem(collection, id);
+    }
   }
 
   Future<void> _deleteItem(String collection, String id) async {
