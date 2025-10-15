@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nail_management/pages/event_page.dart';
 import 'package:nail_management/pages/service_page.dart';
-import 'package:nail_management/pages/settings_page.dart';
+import 'package:nail_management/pages/client_page.dart';
 import 'package:nail_management/theme/app_theme.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -44,7 +44,7 @@ class _LandingPageState extends State<LandingPage> {
             },
           );
         case 2:
-          return SettingsPage(key: ValueKey("settings_page_${DateTime.now().millisecondsSinceEpoch}"));
+          return ClientPage(key: ValueKey("client_page_${DateTime.now().millisecondsSinceEpoch}"));
         default:
           return const SizedBox.shrink();
       }
@@ -71,9 +71,9 @@ class _LandingPageState extends State<LandingPage> {
         showSelectedLabels: false,
         showUnselectedLabels: false,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: ""),
           BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
         ],
       ),
     );
@@ -99,6 +99,7 @@ class CalendarPage extends StatefulWidget {
 class _CalendarPageState extends State<CalendarPage> {
   String? selectedAgentId;
   List<Map<String, dynamic>> agents = [];
+  Map<DateTime, List<Map<String, dynamic>>> agentEvents = {};
 
   @override
   void initState() {
@@ -120,14 +121,38 @@ class _CalendarPageState extends State<CalendarPage> {
     });
   }
 
-  void _selectAgent(String id) {
+  Future<void> _loadAgentEvents(String agentId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection("events")
+        .where("agentId", isEqualTo: agentId)
+        .get();
+
+    final Map<DateTime, List<Map<String, dynamic>>> tempEvents = {};
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final date = (data["date"] as Timestamp).toDate();
+      final normalizedDate = DateTime(date.year, date.month, date.day);
+
+      tempEvents.putIfAbsent(normalizedDate, () => []).add(data);
+    }
+
+    setState(() => agentEvents = tempEvents);
+  }
+
+  void _selectAgent(String id) async {
     setState(() {
       selectedAgentId = selectedAgentId == id ? null : id;
+      agentEvents.clear();
     });
+
+    if (selectedAgentId != null) {
+      await _loadAgentEvents(selectedAgentId!);
+    }
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
-    if (selectedAgentId == null) return; 
+    if (selectedAgentId == null) return;
     widget.onDaySelected(selectedDay, focusedDay);
 
     showModalBottomSheet(
@@ -145,6 +170,11 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
+  List<Map<String, dynamic>> _getEventsForDay(DateTime day) {
+    final normalized = DateTime(day.year, day.month, day.day);
+    return agentEvents[normalized] ?? [];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -153,7 +183,7 @@ class _CalendarPageState extends State<CalendarPage> {
           height: 150,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final totalWidth = agents.length * 120; // largura estimada por card
+              final totalWidth = agents.length * 120;
               final center = totalWidth < constraints.maxWidth;
 
               return ListView.builder(
@@ -224,7 +254,7 @@ class _CalendarPageState extends State<CalendarPage> {
         Padding(
           padding: const EdgeInsets.all(8),
           child: AbsorbPointer(
-            absorbing: selectedAgentId == null, 
+            absorbing: selectedAgentId == null,
             child: Opacity(
               opacity: selectedAgentId == null ? 0.5 : 1.0,
               child: Card(
@@ -237,19 +267,50 @@ class _CalendarPageState extends State<CalendarPage> {
                   lastDay: DateTime.utc(2030, 12, 31),
                   selectedDayPredicate: (day) => isSameDay(widget.selectedDay, day),
                   onDaySelected: _onDaySelected,
+                  eventLoader: _getEventsForDay,
                   calendarStyle: CalendarStyle(
                     selectedDecoration: BoxDecoration(
                       color: AppTheme.primary,
                       shape: BoxShape.circle,
                     ),
                     todayDecoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.primary, width: 2),
+                      border: Border.all(color: AppTheme.secondary, width: 2),
                       shape: BoxShape.circle,
                     ),
+                    markerDecoration: const BoxDecoration(
+                      color: Colors.pink,
+                      shape: BoxShape.circle,
+                    ),
+                    markersAlignment: Alignment.bottomCenter,
+                    markersMaxCount: 3,
                   ),
                   headerStyle: const HeaderStyle(
                     formatButtonVisible: false,
                     titleCentered: true,
+                  ),
+                  calendarBuilders: CalendarBuilders(
+                    markerBuilder: (context, date, events) {
+                      if (events.isEmpty) return null;
+                      return Positioned(
+                        bottom: 1,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 2, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(211, 158, 158, 158),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            "${events.length}",
+                            style: const TextStyle(
+                              color: AppTheme.neutralDark,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -260,6 +321,7 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 }
+
 
 
 class ProfessionalsList extends StatelessWidget {
