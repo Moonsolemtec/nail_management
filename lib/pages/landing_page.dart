@@ -151,53 +151,71 @@ class _CalendarPageState extends State<CalendarPage> {
       children: [
         SizedBox(
           height: 150,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: agents.length,
-            itemBuilder: (context, index) {
-              final agent = agents[index];
-              final isSelected = agent["id"] == selectedAgentId;
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final totalWidth = agents.length * 120; // largura estimada por card
+              final center = totalWidth < constraints.maxWidth;
 
-              ImageProvider? avatarImage;
-              if (agent["imagePath"].isNotEmpty) {
-                final file = File(agent["imagePath"]);
-                if (file.existsSync()) {
-                  avatarImage = FileImage(file);
-                }
-              }
-
-              return GestureDetector(
-                onTap: () => _selectAgent(agent["id"]),
-                child: Container(
-                  width: 110,
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: isSelected
-                          ? BorderSide(color: Theme.of(context).primaryColor, width: 2)
-                          : BorderSide.none,
-                    ),
-                    elevation: isSelected ? 4 : 2,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundImage: avatarImage,
-                          child: avatarImage == null ? const Icon(Icons.person) : null,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          agent["name"],
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: agents.length,
+                padding: EdgeInsets.symmetric(
+                  horizontal: center
+                      ? (constraints.maxWidth - totalWidth) / 2
+                      : 8,
                 ),
+                itemBuilder: (context, index) {
+                  final agent = agents[index];
+                  final isSelected = agent["id"] == selectedAgentId;
+
+                  ImageProvider? avatarImage;
+                  if (agent["imagePath"].isNotEmpty) {
+                    final file = File(agent["imagePath"]);
+                    if (file.existsSync()) {
+                      avatarImage = FileImage(file);
+                    }
+                  }
+
+                  return GestureDetector(
+                    onTap: () => _selectAgent(agent["id"]),
+                    child: Container(
+                      width: 110,
+                      margin:
+                          const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: isSelected
+                              ? BorderSide(
+                                  color: Theme.of(context).primaryColor, width: 2)
+                              : BorderSide.none,
+                        ),
+                        elevation: isSelected ? 4 : 2,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundImage: avatarImage,
+                              child: avatarImage == null
+                                  ? const Icon(Icons.person)
+                                  : null,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              agent["name"],
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),
